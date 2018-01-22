@@ -82,7 +82,7 @@ object OpenWeatherJsonUtils {
 
         val weatherArray = forecastJson.getJSONArray(OWM_LIST)
 
-        parsedWeatherData = emptyArray()
+        parsedWeatherData = Array(weatherArray.length()) { _ -> ""}
 
         val localDate = System.currentTimeMillis()
         val utcDate = SunshineDateUtils.getUTCDateFromLocal(localDate)

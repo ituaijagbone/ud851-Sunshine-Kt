@@ -15,16 +15,55 @@
  */
 package com.example.android.sunshine
 
+import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
+import com.example.android.sunshine.data.SunshinePreferences
+import com.example.android.sunshine.utilities.NetworkUtils
+import com.example.android.sunshine.utilities.OpenWeatherJsonUtils
+import org.json.JSONException
+import java.io.IOException
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
-    private var mWeatherDisplayTextView: TextView? = null
+    private lateinit var mWeatherDisplayTextView: TextView
+    var getResponseFromHttpUrl:(URL) -> String? = NetworkUtils::getResponseFromHttpUrl
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_forecast)
         mWeatherDisplayTextView = findViewById(R.id.tv_weather_data) as TextView
-        mWeatherDisplayTextView?.text = arrayOf("Sunday - Sunny - 10/12", "Monday - rainy - 10/12").joinToString("\n\n\n")
+
+        loadWeatherData()
+    }
+
+    private fun loadWeatherData() {
+        val location = SunshinePreferences.getPreferredWeatherLocation(this)
+        FetchWeatherTaskAsyncTask().execute(location)
+    }
+
+    private inner class FetchWeatherTaskAsyncTask : AsyncTask<String?, Unit, Array<String>?>() {
+        override fun doInBackground(vararg params: String?): Array<String>? {
+            val location = params[0]!!
+            return try {
+                NetworkUtils.buildUrl(location)?.let {
+                    getResponseFromHttpUrl(it)?.let {
+                        OpenWeatherJsonUtils
+                                .getSimpleWeatherStringsFromJson(this@MainActivity, it)
+                    }
+                }
+            } catch (e: IOException) {
+                return null
+            } catch (e: JSONException) {
+                return null
+            }
+        }
+
+        override fun onPostExecute(result: Array<String>?) {
+            if (result != null && result.isNotEmpty()) {
+                mWeatherDisplayTextView.text = result.joinToString("\n\n\n")
+            }
+        }
     }
 }

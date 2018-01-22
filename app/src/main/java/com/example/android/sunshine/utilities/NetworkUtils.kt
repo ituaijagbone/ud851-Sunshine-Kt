@@ -15,11 +15,12 @@
  */
 package com.example.android.sunshine.utilities
 
+import android.net.Uri
 import java.io.IOException
-import java.io.InputStream
 import java.net.HttpURLConnection
+import java.net.MalformedURLException
 import java.net.URL
-import java.util.Scanner
+import java.util.*
 
 /**
  * These utilities will be used to communicate with the weather servers.
@@ -63,8 +64,15 @@ object NetworkUtils {
      * @return The URL to use to query the weather server.
      */
     fun buildUrl(locationQuery: String): URL? {
-        /** This will be implemented in a future lesson  */
-        return null
+        val uri = Uri.parse(FORECAST_BASE_URL)
+                .buildUpon()
+                .appendQueryParameter(QUERY_PARAM, locationQuery)
+                .appendQueryParameter(FORMAT_PARAM, format)
+                .appendQueryParameter(UNITS_PARAM, units)
+                .appendQueryParameter(DAYS_PARAM, numDays.toString())
+                .build()
+
+        return try { URL(uri.toString())} catch (e: MalformedURLException) { return null }
     }
 
     /**
