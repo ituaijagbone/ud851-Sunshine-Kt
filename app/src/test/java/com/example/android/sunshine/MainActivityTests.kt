@@ -2,13 +2,13 @@ package com.example.android.sunshine
 
 import android.widget.TextView
 import com.example.android.sunshine.utilities.OpenWeatherJsonUtils
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertTrue
+import junit.framework.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestRunner::class)
@@ -51,18 +51,53 @@ class MainActivityTests {
     fun onActionFreshFetchesNewData() {
         val refreshMenuItem = shadowOf(activity).optionsMenu.findItem(R.id.action_refresh)
         val textView = activity.findViewById(R.id.tv_weather_data) as TextView
+        val errorTextView = activity.findViewById(R.id.tv_error_message) as TextView
+        assertFalse(errorTextView.isShown)
 
         activity.getResponseFromHttpUrl = { _ ->
             assertTrue(textView.text.isEmpty())
             fixtureModifiedForRefresh()
         }
-
         activity.onOptionsItemSelected(refreshMenuItem)
 
         val expected = OpenWeatherJsonUtils
                 .getSimpleWeatherStringsFromJson(activity, fixtureModifiedForRefresh())
                 ?.joinToString("\n\n\n")
         assertEquals(textView.text, expected)
+
+        activity.getResponseFromHttpUrl = { _ ->
+            null
+        }
+        activity.onOptionsItemSelected(refreshMenuItem)
+
+        val context = RuntimeEnvironment.application
+        assertTrue(errorTextView.isShown)
+        assertEquals(errorTextView.text, context.getString(R.string.error_message))
+        assertFalse(textView.isShown)
+
+        activity.getResponseFromHttpUrl = { _ ->
+            fixtureModifiedForRefresh()
+        }
+        activity.onOptionsItemSelected(refreshMenuItem)
+        assertFalse(errorTextView.isShown)
+        assertTrue(textView.isShown)
+    }
+
+    @Test
+    fun loadingIndicatorToggles() {
+        val progressBar = activity.findViewById(R.id.pb_loading_indicator)
+
+        assertFalse(progressBar.isShown)
+
+        activity.getResponseFromHttpUrl = { _ ->
+            assertTrue(progressBar.isShown)
+            null
+        }
+
+        val refreshMenuItem = shadowOf(activity).optionsMenu.findItem(R.id.action_refresh)
+        activity.onOptionsItemSelected(refreshMenuItem)
+
+        assertFalse(progressBar.isShown)
     }
 
     private fun fixture() = "{\n" +

@@ -20,6 +20,8 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.widget.ProgressBar
 import android.widget.TextView
 import com.example.android.sunshine.data.SunshinePreferences
 import com.example.android.sunshine.utilities.NetworkUtils
@@ -29,13 +31,18 @@ import java.io.IOException
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var mWeatherDisplayTextView: TextView
+    private lateinit var mWeatherTextView: TextView
+    private lateinit var mErrorMessageTextView: TextView
+    private lateinit var mProgressBar: ProgressBar
+
     var getResponseFromHttpUrl:(URL) -> String? = NetworkUtils::getResponseFromHttpUrl
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_forecast)
-        mWeatherDisplayTextView = findViewById(R.id.tv_weather_data) as TextView
+        mWeatherTextView = findViewById(R.id.tv_weather_data) as TextView
+        mErrorMessageTextView = findViewById(R.id.tv_error_message) as TextView
+        mProgressBar = findViewById(R.id.pb_loading_indicator) as ProgressBar
 
         loadWeatherData()
     }
@@ -48,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         return when {
             item?.itemId == R.id.action_refresh -> {
-                mWeatherDisplayTextView.text = ""
+                mWeatherTextView.text = ""
                 loadWeatherData()
                 true
             }
@@ -61,9 +68,24 @@ class MainActivity : AppCompatActivity() {
         FetchWeatherTaskAsyncTask().execute(location)
     }
 
+    private fun showWeatherDataView() {
+        mWeatherTextView.visibility = View.VISIBLE
+        mErrorMessageTextView.visibility = View.INVISIBLE
+    }
+
+    private fun showErrorMessage() {
+        mWeatherTextView.visibility = View.INVISIBLE
+        mErrorMessageTextView.visibility = View.VISIBLE
+    }
+
     private inner class FetchWeatherTaskAsyncTask : AsyncTask<String?, Unit, Array<String>?>() {
+        override fun onPreExecute() {
+            super.onPreExecute()
+            mProgressBar.visibility = View.VISIBLE
+        }
+
         override fun doInBackground(vararg params: String?): Array<String>? {
-            val location = params[0]!!
+            val location = params[0] ?: return null
             return try {
                 NetworkUtils.buildUrl(location)?.let {
                     getResponseFromHttpUrl(it)?.let {
@@ -79,8 +101,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onPostExecute(result: Array<String>?) {
+            mProgressBar.visibility = View.INVISIBLE
             if (result != null && result.isNotEmpty()) {
-                mWeatherDisplayTextView.text = result.joinToString("\n\n\n")
+                showWeatherDataView()
+                mWeatherTextView.text = result.joinToString("\n\n\n")
+            } else {
+                showErrorMessage()
             }
         }
     }
