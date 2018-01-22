@@ -18,6 +18,8 @@ package com.example.android.sunshine
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.TextView
 import com.example.android.sunshine.data.SunshinePreferences
 import com.example.android.sunshine.utilities.NetworkUtils
@@ -36,6 +38,22 @@ class MainActivity : AppCompatActivity() {
         mWeatherDisplayTextView = findViewById(R.id.tv_weather_data) as TextView
 
         loadWeatherData()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.forecast, menu!!)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        return when {
+            item?.itemId == R.id.action_refresh -> {
+                mWeatherDisplayTextView.text = ""
+                loadWeatherData()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun loadWeatherData() {
